@@ -22,6 +22,22 @@ class MainViewController: UIViewController {
     private var tableView: UITableView!
     private var tableDataSource: GMSAutocompleteTableDataSource!
     
+    private var lat: Double = 25.033671
+    private var lng: Double = 121.564427
+    
+    @IBAction func openMap(_ sender: UIBarButtonItem) {
+        
+        let url = URL(string: "comgooglemaps://?saddr=&daddr=\(lat),\(lng)&directionsmode=driving")
+                
+        if UIApplication.shared.canOpenURL(url!) {
+            UIApplication.shared.open(url!, options: [:], completionHandler: nil)
+        } else {
+            // 若手機沒安裝 Google Map App 則導到 App Store(id443904275 為 Google Map App 的 ID)
+            let appStoreGoogleMapURL = URL(string: "itms-apps://itunes.apple.com/app/id585027354")!
+            UIApplication.shared.open(appStoreGoogleMapURL, options: [:], completionHandler: nil)
+        }
+    }
+    
     //var resultsViewController: GMSAutocompleteResultsViewController?
     //var searchController: UISearchController?
     //var resultView: UITextView?
@@ -58,6 +74,10 @@ class MainViewController: UIViewController {
         super.viewWillAppear(animated)
         
         setMapPlace()
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
     }
     
     func initStackView() {
@@ -276,12 +296,17 @@ extension MainViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         // Update the GMSAutocompleteTableDataSource with the search text.
         print("search Bar text \(searchText)")
+        self.view.endEditing(true)
         placeClient.findAutocompletePredictions(fromQuery: searchText, filter: nil, sessionToken: nil){ prediction, error in
             print("prediction: \(prediction?.first), placeid: \(prediction?.first?.placeID)error: \(error)")
             if let placeID = prediction?.first?.placeID {
                 let placeFields: GMSPlaceField = [.name, .coordinate, .formattedAddress, .placeID]
                 self.placeClient.fetchPlace(fromPlaceID: placeID, placeFields: placeFields, sessionToken: nil) { placemark, error in
-                    print("search placemark: \(placemark), error: \(error)")
+                    print("search placemark: \(placemark), error: \(error) \(placemark?.coordinate)")
+                    if let placemark = placemark {
+                        self.lat = placemark.coordinate.latitude
+                        self.lng = placemark.coordinate.longitude
+                    }
                 }
 //                self.placeClient.lookUpPlaceID(placeID) { placemark, error in
 //                    print("search placemark: \(placemark), error: \(error)")
